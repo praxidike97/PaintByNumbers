@@ -59,7 +59,10 @@ def _build_discriminator(image_shape=(256, 256, 3)):
 
     patch_out = Conv2D(1, kernel_size=(4, 4), padding="same")(x)
 
-    return Model(input_discriminator, patch_out)
+    model = Model(input_discriminator, patch_out)
+    model.compile(loss="mse", optimizer=Adam(lr=0.0002))
+
+    return model
 
 
 def _build_combined_model(image_shape, generator01, generator02, discriminator):
