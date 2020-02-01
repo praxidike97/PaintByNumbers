@@ -166,4 +166,4 @@ if __name__ == "__main__":
     trainB = np.load(os.path.join(data_path, "trainB" + ".npy"))
 
     train(generator_AtoB, generator_BtoA, discriminator_A, discriminator_B,
-          combined_model_AtoB, combined_model_BtoA, trainA, trainB)
+          combined_model_AtoB, combined_model_BtoA, trainA, trainB, save_path=data_path)
