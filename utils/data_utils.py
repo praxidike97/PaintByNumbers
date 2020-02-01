@@ -4,8 +4,6 @@ import numpy as np
 import PIL.Image as Image
 import matplotlib.pyplot as plt
 
-data_path = "/media/fabian/Data/ML_Data/horse2zebra"
-
 
 def images_to_npy():
     for dataset in ["trainA", "trainB", "testA", "testB"]:
@@ -52,14 +50,6 @@ def update_image_pool(image_pool, images, size=50):
     return np.asarray(selected_images)
 
 
-if ["trainA.npy", "trainB.npy", "testA.npy", "testB.npy"] not in glob.glob(os.path.join(data_path)):
-    images_to_npy()
-
-
 if __name__ == "__main__":
-    data = np.load(os.path.join(data_path, "trainA" + ".npy"))
-    X, y = load_real_images(data, 128, 16)
-    X, y = load_fake_images(data, 128, 16)
-    print(X.shape)
-    plt.imshow(X[100])
-    plt.show()
+    if ["trainA.npy", "trainB.npy", "testA.npy", "testB.npy"] not in glob.glob(os.path.join(data_path)):
+        images_to_npy()
