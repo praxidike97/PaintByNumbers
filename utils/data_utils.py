@@ -8,7 +8,7 @@ data_path = "/media/fabian/Data/ML_Data/horse2zebra"
 
 
 def images_to_npy():
-    for dataset in ["trainX", "trainY", "testX", "testY"]:
+    for dataset in ["trainA", "trainB", "testA", "testB"]:
         list_images = list()
         for image_path in glob.glob(os.path.join(data_path, dataset, "*")):
             im = Image.open(image_path)
@@ -37,12 +37,27 @@ def load_fake_images(generator, dataset, number_images, n_patch):
     return X, y
 
 
-if ["trainX.npy", "trainY.npy", "testX.npy", "testY.npy"] not in glob.glob(os.path.join(data_path)):
+def update_image_pool(image_pool, images, size=50):
+    selected_images = list()
+    for image in images:
+        if len(image_pool) < size:
+            image_pool.append(image)
+            selected_images.append(image)
+        elif np.random.random() < 0.5:
+            selected_images.append(image)
+        else:
+            indices = np.random.randint(0, len(image_pool))
+            selected_images.append(image_pool[indices])
+            image_pool[indices] = image
+    return np.asarray(selected_images)
+
+
+if ["trainA.npy", "trainB.npy", "testA.npy", "testB.npy"] not in glob.glob(os.path.join(data_path)):
     images_to_npy()
 
 
 if __name__ == "__main__":
-    data = np.load(os.path.join(data_path, "trainX" + ".npy"))
+    data = np.load(os.path.join(data_path, "trainA" + ".npy"))
     X, y = load_real_images(data, 128, 16)
     X, y = load_fake_images(data, 128, 16)
     print(X.shape)

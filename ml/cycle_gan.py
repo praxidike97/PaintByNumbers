@@ -3,10 +3,10 @@ import numpy as np
 
 from keras.models import Model
 from keras.optimizers import Adam
-from keras.layers import Conv2D, Conv2DTranspose, Input, Add, Concatenate, BatchNormalization, LeakyReLU
+from keras.layers import Conv2D, Conv2DTranspose, Input, Add, LeakyReLU
 from keras_contrib.layers.normalization.instancenormalization import InstanceNormalization
 
-from utils.data_utils import load_real_images, load_fake_images
+from utils.data_utils import load_real_images, load_fake_images, update_image_pool
 
 data_path = "/media/fabian/Data/ML_Data/horse2zebra"
 
@@ -90,22 +90,58 @@ def _build_combined_model(image_shape, generator01, generator02, discriminator):
     return combined_model
 
 
-image_shape = (256, 256, 3)
+def train(generator_AtoB, generator_BtoA, discriminator_A, discriminator_B,
+          combined_model_AtoB, combined_model_BtoA, trainA, trainB,
+          n_epochs=100, batch_size=1):
 
-generator_XtoY = _build_generator(image_shape=image_shape)
-generator_YtoX = _build_generator(image_shape=image_shape)
-generator_YtoX.summary()
+    n_patch = discriminator_A.output_shape[1]
+    poolA, poolB = list(), list()
+    batches_per_epoch = int(len(trainA) / batch_size)
+    n_steps = batches_per_epoch * n_epochs
 
-discriminator_X = _build_discriminator(image_shape=image_shape)
-discriminator_Y = _build_discriminator(image_shape=image_shape)
-discriminator_Y.summary()
+    for i in range(n_steps):
+        X_realA, y_realA = load_real_images(trainA, batch_size, n_patch)
+        X_realB, y_realB = load_real_images(trainB, batch_size, n_patch)
 
-# X -> Y -> X [real/fake]
-combined_model_XtoY = _build_combined_model(image_shape, generator_XtoY, generator_YtoX, discriminator_Y)
+        X_fakeA, y_fakeA = load_fake_images(generator_BtoA, X_realB, n_patch)
+        X_fakeB, y_fakeB = load_fake_images(generator_AtoB, X_realA, n_patch)
 
-# Y -> X -> Y [real/fake]
-combined_model_YtoX = _build_combined_model(image_shape, generator_YtoX, generator_XtoY, discriminator_X)
+        X_fakeA = update_image_pool(poolA, X_fakeA)
+        X_fakeB = update_image_pool(poolB, X_fakeB)
+
+        g_loss2, _, _, _, _ = combined_model_BtoA.train_on_batch([X_realB, X_realA], [y_realA, X_realA, X_realB, X_realA])
+
+        dA_loss1 = discriminator_A.train_on_batch(X_realA, y_realA)
+        dA_loss2 = discriminator_A.train_on_batch(X_fakeA, y_fakeA)
+
+        g_loss1, _, _, _, _ = combined_model_AtoB.train_on_batch([X_realA, X_realB], [y_realB, X_realB, X_realA, X_realB])
+
+        dB_loss1 = discriminator_B.train_on_batch(X_realB, y_realB)
+        dB_loss2 = discriminator_B.train_on_batch(X_fakeB, y_fakeB)
+
+        print('>%d, dA[%.3f,%.3f] dB[%.3f,%.3f] g[%.3f,%.3f]' % (
+        i + 1, dA_loss1, dA_loss2, dB_loss1, dB_loss2, g_loss1, g_loss2))
 
 
-data = np.load(os.path.join(data_path, "trainX" + ".npy"))
-X, y = load_fake_images(generator_XtoY, data, 128, 16)
+if __name__ == "__main__":
+    image_shape = (256, 256, 3)
+
+    generator_AtoB = _build_generator(image_shape=image_shape)
+    generator_BtoA = _build_generator(image_shape=image_shape)
+    generator_BtoA.summary()
+
+    discriminator_A = _build_discriminator(image_shape=image_shape)
+    discriminator_B = _build_discriminator(image_shape=image_shape)
+    discriminator_B.summary()
+
+    # A -> B -> A [real/fake]
+    combined_model_AtoB = _build_combined_model(image_shape, generator_AtoB, generator_BtoA, discriminator_B)
+
+    # B -> A -> B [real/fake]
+    combined_model_BtoA = _build_combined_model(image_shape, generator_BtoA, generator_AtoB, discriminator_A)
+
+    trainA = np.load(os.path.join(data_path, "trainA" + ".npy"))
+    trainB = np.load(os.path.join(data_path, "trainB" + ".npy"))
+
+    train(generator_AtoB, generator_BtoA, discriminator_A, discriminator_B,
+          combined_model_AtoB, combined_model_BtoA, trainA, trainB)
