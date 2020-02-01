@@ -104,8 +104,8 @@ def train(generator_AtoB, generator_BtoA, discriminator_A, discriminator_B,
         X_realA, y_realA = load_real_images(trainA, batch_size, n_patch)
         X_realB, y_realB = load_real_images(trainB, batch_size, n_patch)
 
-        X_fakeA, y_fakeA = load_fake_images(generator_BtoA, X_realB, n_patch)
-        X_fakeB, y_fakeB = load_fake_images(generator_AtoB, X_realA, n_patch)
+        X_fakeA, y_fakeA = load_fake_images(generator_BtoA, X_realB, batch_size, n_patch)
+        X_fakeB, y_fakeB = load_fake_images(generator_AtoB, X_realA, batch_size, n_patch)
 
         X_fakeA = update_image_pool(poolA, X_fakeA)
         X_fakeB = update_image_pool(poolB, X_fakeB)
