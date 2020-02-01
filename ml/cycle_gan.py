@@ -126,10 +126,9 @@ def train(generator_AtoB, generator_BtoA, discriminator_A, discriminator_B,
         print('>%d, dA[%.3f,%.3f] dB[%.3f,%.3f] g[%.3f,%.3f]' % (
         i + 1, dA_loss1, dA_loss2, dB_loss1, dB_loss2, g_loss1, g_loss2))
 
-        if i%100 == 0:
+        if i%1000 == 0:
             generator_AtoB.save(os.path.join(save_path, "generator_AtoB-epoch_" + str(i+1) + ".h5"))
             generator_BtoA.save(os.path.join(save_path, "generator_BtoA-epoch_" + str(i+1) + ".h5"))
-
 
 
 if __name__ == "__main__":
