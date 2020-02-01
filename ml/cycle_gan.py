@@ -1,5 +1,8 @@
 import os
 import numpy as np
+import sys
+import getopt
+sys.path.append("..")
 
 from keras.models import Model
 from keras.optimizers import Adam
@@ -7,8 +10,6 @@ from keras.layers import Conv2D, Conv2DTranspose, Input, Add, LeakyReLU
 from keras_contrib.layers.normalization.instancenormalization import InstanceNormalization
 
 from utils.data_utils import load_real_images, load_fake_images, update_image_pool
-
-data_path = "/media/fabian/Data/ML_Data/horse2zebra"
 
 
 def _build_res_block(x, num_filters=256):
@@ -124,7 +125,24 @@ def train(generator_AtoB, generator_BtoA, discriminator_A, discriminator_B,
 
 
 if __name__ == "__main__":
+    args = sys.argv[1:]
+
+    data_path = ''
+
+    try:
+        opts, args = getopt.getopt(args, "p:", ["data_path="])
+    except getopt.GetoptError:
+        sys.exit(2)
+
+    for opt, arg in opts:
+        if opt in ("-p", "--data_path"):
+            data_path = arg
+
+    print("Data path is ", data_path)
+
     image_shape = (256, 256, 3)
+
+    exit(0)
 
     generator_AtoB = _build_generator(image_shape=image_shape)
     generator_BtoA = _build_generator(image_shape=image_shape)
