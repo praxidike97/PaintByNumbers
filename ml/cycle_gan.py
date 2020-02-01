@@ -138,11 +138,7 @@ if __name__ == "__main__":
         if opt in ("-p", "--data_path"):
             data_path = arg
 
-    print("Data path is ", data_path)
-
     image_shape = (256, 256, 3)
-
-    exit(0)
 
     generator_AtoB = _build_generator(image_shape=image_shape)
     generator_BtoA = _build_generator(image_shape=image_shape)
