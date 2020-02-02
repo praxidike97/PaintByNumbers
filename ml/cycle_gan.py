@@ -8,6 +8,7 @@ from keras.models import Model
 from keras.optimizers import Adam
 from keras.layers import Conv2D, Conv2DTranspose, Input, Add, LeakyReLU
 from keras_contrib.layers.normalization.instancenormalization import InstanceNormalization
+from keras.initializers import RandomNormal
 
 from utils.data_utils import load_real_images, load_fake_images, update_image_pool
 
@@ -20,21 +21,23 @@ def _build_res_block(x, num_filters=256):
 
 
 def _build_generator(image_shape=(256, 256, 3)):
+    init = RandomNormal(stddev=0.02)
+
     input_generator = Input(image_shape)
-    x = Conv2D(64, kernel_size=(7, 7), padding="same", strides=(1, 1), activation="relu")(input_generator)
-    x = InstanceNormalization()(x)
-    x = Conv2D(128, kernel_size=(3, 3), padding="same", strides=(2, 2), activation="relu")(x)
-    x = InstanceNormalization()(x)
-    x = Conv2D(256, kernel_size=(3, 3), padding="same", strides=(2, 2), activation="relu")(x)
-    x = InstanceNormalization()(x)
+    x = Conv2D(64, kernel_size=(7, 7), padding="same", strides=(1, 1), activation="relu", kernel_initializer=init)(input_generator)
+    x = InstanceNormalization(axis=-1)(x)
+    x = Conv2D(128, kernel_size=(3, 3), padding="same", strides=(2, 2), activation="relu", kernel_initializer=init)(x)
+    x = InstanceNormalization(axis=-1)(x)
+    x = Conv2D(256, kernel_size=(3, 3), padding="same", strides=(2, 2), activation="relu", kernel_initializer=init)(x)
+    x = InstanceNormalization(axis=-1)(x)
 
     for _ in range(9):
         x = _build_res_block(x, num_filters=256)
 
-    x = Conv2DTranspose(128, kernel_size=(3, 3), padding="same", strides=(2, 2), activation="relu")(x)
-    x = InstanceNormalization()(x)
-    x = Conv2DTranspose(64, kernel_size=(3, 3), padding="same", strides=(2, 2), activation="relu")(x)
-    x = InstanceNormalization()(x)
+    x = Conv2DTranspose(128, kernel_size=(3, 3), padding="same", strides=(2, 2), activation="relu", kernel_initializer=init)(x)
+    x = InstanceNormalization(axis=-1)(x)
+    x = Conv2DTranspose(64, kernel_size=(3, 3), padding="same", strides=(2, 2), activation="relu", kernel_initializer=init)(x)
+    x = InstanceNormalization(axis=-1)(x)
 
     x = Conv2D(3, kernel_size=(7, 7), padding="same", strides=(1, 1), activation="tanh")(x)
 
@@ -42,25 +45,27 @@ def _build_generator(image_shape=(256, 256, 3)):
 
 
 def _build_discriminator(image_shape=(256, 256, 3)):
+    init = RandomNormal(stddev=0.02)
+
     input_discriminator = Input(image_shape)
-    x = Conv2D(64, kernel_size=(4, 4), strides=(2, 2), padding="same")(input_discriminator)
+    x = Conv2D(64, kernel_size=(4, 4), strides=(2, 2), padding="same", kernel_initializer=init)(input_discriminator)
     x = LeakyReLU(alpha=0.2)(x)
-    x = Conv2D(128, kernel_size=(4, 4), strides=(2, 2), padding="same")(x)
-    x = InstanceNormalization()(x)
+    x = Conv2D(128, kernel_size=(4, 4), strides=(2, 2), padding="same", kernel_initializer=init)(x)
+    x = InstanceNormalization(axis=-1)(x)
     x = LeakyReLU(alpha=0.2)(x)
-    x = Conv2D(256, kernel_size=(4, 4), strides=(2, 2), padding="same")(x)
-    x = InstanceNormalization()(x)
+    x = Conv2D(256, kernel_size=(4, 4), strides=(2, 2), padding="same", kernel_initializer=init)(x)
+    x = InstanceNormalization(axis=-1)(x)
     x = LeakyReLU(alpha=0.2)(x)
-    x = Conv2D(512, kernel_size=(4, 4), strides=(2, 2), padding="same")(x)
-    x = InstanceNormalization()(x)
+    x = Conv2D(512, kernel_size=(4, 4), strides=(2, 2), padding="same", kernel_initializer=init)(x)
+    x = InstanceNormalization(axis=-1)(x)
     x = LeakyReLU(alpha=0.2)(x)
     #x = Conv2D(512, kernel_size=(4, 4), padding="same", activation="relu")(x)
     #x = InstanceNormalization()(x)
 
-    patch_out = Conv2D(1, kernel_size=(4, 4), padding="same")(x)
+    patch_out = Conv2D(1, kernel_size=(4, 4), padding="same", kernel_initializer=init)(x)
 
     model = Model(input_discriminator, patch_out)
-    model.compile(loss="mse", optimizer=Adam(lr=0.0002))
+    model.compile(loss="mse", optimizer=Adam(lr=0.0002, beta_1=0.5), loss_weights=[0.5])
 
     return model
 
@@ -89,7 +94,7 @@ def _build_combined_model(image_shape, generator01, generator02, discriminator):
 
     combined_model = Model([input_fake, input_id],
                            [output_discriminator, output_id_generator01, output_forward_generator02, output_backward_generator01])
-    combined_model.compile(loss=['mse', 'mae', 'mae', 'mae'], loss_weights=[1, 5, 10, 10], optimizer=Adam(lr=0.0002))
+    combined_model.compile(loss=['mse', 'mae', 'mae', 'mae'], loss_weights=[1, 5, 10, 10], optimizer=Adam(lr=0.0002, beta_1=0.5))
 
     return combined_model
 
