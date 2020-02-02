@@ -15,7 +15,9 @@ from utils.data_utils import load_real_images, load_fake_images, update_image_po
 
 def _build_res_block(x, num_filters=256):
     conv01 = Conv2D(filters=num_filters, kernel_size=(3, 3), padding="same", strides=(1, 1), activation="relu")(x)
-    conv02 = Conv2D(filters=num_filters, kernel_size=(3, 3), padding="same", strides=(1, 1), activation="relu")(conv01)
+    conv01 = InstanceNormalization(axis=-1)(conv01)
+    conv02 = Conv2D(filters=num_filters, kernel_size=(3, 3), padding="same", strides=(1, 1))(conv01)
+    conv02 = InstanceNormalization(axis=-1)(conv02)
 
     return Add()([conv02, x])
 

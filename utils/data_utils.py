@@ -17,7 +17,7 @@ def images_to_npy():
                 list_images.append(np.array(im))
 
         array_images = np.array(list_images)
-        np.save(os.path.join(data_path, dataset + ".npy"), (array_images/127.)-1.)
+        np.save(os.path.join(data_path, dataset + ".npy"), (array_images/127.5)-1.)
 
 
 def load_real_images(dataset, number_images, n_patch):
