@@ -3,15 +3,16 @@ import os
 import numpy as np
 import PIL.Image as Image
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 
 
-data_path = "/media/fabian/Data/ML_Data/horse2zebra"
+data_path = "/media/fabian/Data/ML_Data/CycleGAN/ukiyoe2photo"
 
 
 def images_to_npy():
     for dataset in ["trainA", "trainB", "testA", "testB"]:
         list_images = list()
-        for image_path in glob.glob(os.path.join(data_path, dataset, "*")):
+        for image_path in tqdm(glob.glob(os.path.join(data_path, dataset, "*"))):
             im = Image.open(image_path)
             if np.array(im).shape == (256, 256, 3):
                 list_images.append(np.array(im))
