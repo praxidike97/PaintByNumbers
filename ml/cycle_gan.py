@@ -5,12 +5,14 @@ import getopt
 sys.path.append("..")
 
 from keras.models import Model
+from keras.utils import plot_model
 from keras.optimizers import Adam
-from keras.layers import Conv2D, Conv2DTranspose, Input, Add, LeakyReLU
+from keras.layers import Conv2D, Conv2DTranspose, Input, Add, LeakyReLU, Concatenate
 from keras_contrib.layers.normalization.instancenormalization import InstanceNormalization
 from keras.initializers import RandomNormal
 
 from utils.data_utils import load_real_images, load_fake_images, update_image_pool
+from models import CycleGAN
 
 
 def _build_res_block(x, num_filters=256):
@@ -19,7 +21,7 @@ def _build_res_block(x, num_filters=256):
     conv02 = Conv2D(filters=num_filters, kernel_size=(3, 3), padding="same", strides=(1, 1))(conv01)
     conv02 = InstanceNormalization(axis=-1)(conv02)
 
-    return Add()([conv02, x])
+    return Concatenate()([conv02, x])
 
 
 def _build_generator(image_shape=(256, 256, 3)):
@@ -142,6 +144,8 @@ def train(generator_AtoB, generator_BtoA, discriminator_A, discriminator_B,
 
 
 if __name__ == "__main__":
+    cycleGAN = CycleGAN(image_shape=(256, 256, 3))
+
     args = sys.argv[1:]
 
     data_path = ''
@@ -157,12 +161,14 @@ if __name__ == "__main__":
 
     image_shape = (256, 256, 3)
 
-    generator_AtoB = _build_generator(image_shape=image_shape)
-    generator_BtoA = _build_generator(image_shape=image_shape)
+    generator_AtoB = cycleGAN.G_A2B #_build_generator(image_shape=image_shape)
+    plot_model(generator_AtoB, to_file="generator.png")
+    generator_BtoA = cycleGAN.G_B2A #_build_generator(image_shape=image_shape)
     generator_BtoA.summary()
 
-    discriminator_A = _build_discriminator(image_shape=image_shape)
-    discriminator_B = _build_discriminator(image_shape=image_shape)
+    discriminator_A = cycleGAN.D_A #_build_discriminator(image_shape=image_shape)
+    plot_model(discriminator_A, to_file="discriminator.png")
+    discriminator_B = cycleGAN.D_B #_build_discriminator(image_shape=image_shape)
     discriminator_B.summary()
 
     # A -> B -> A [real/fake]
