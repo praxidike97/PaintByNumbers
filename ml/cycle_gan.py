@@ -21,26 +21,26 @@ def _build_res_block(x, num_filters=256):
     conv02 = Conv2D(filters=num_filters, kernel_size=(3, 3), padding="same", strides=(1, 1))(conv01)
     conv02 = InstanceNormalization(axis=-1)(conv02)
 
-    return Concatenate()([conv02, x])
+    return Add()([conv02, x])
 
 
 def _build_generator(image_shape=(256, 256, 3)):
     init = RandomNormal(stddev=0.02)
 
     input_generator = Input(image_shape)
-    x = Conv2D(64, kernel_size=(7, 7), padding="same", strides=(1, 1), activation="relu", kernel_initializer=init)(input_generator)
+    x = Conv2D(32, kernel_size=(7, 7), padding="same", strides=(1, 1), activation="relu", kernel_initializer=init)(input_generator)
+    x = InstanceNormalization(axis=-1)(x)
+    x = Conv2D(64, kernel_size=(3, 3), padding="same", strides=(2, 2), activation="relu", kernel_initializer=init)(x)
     x = InstanceNormalization(axis=-1)(x)
     x = Conv2D(128, kernel_size=(3, 3), padding="same", strides=(2, 2), activation="relu", kernel_initializer=init)(x)
     x = InstanceNormalization(axis=-1)(x)
-    x = Conv2D(256, kernel_size=(3, 3), padding="same", strides=(2, 2), activation="relu", kernel_initializer=init)(x)
-    x = InstanceNormalization(axis=-1)(x)
 
     for _ in range(9):
-        x = _build_res_block(x, num_filters=256)
+        x = _build_res_block(x, num_filters=128)
 
-    x = Conv2DTranspose(128, kernel_size=(3, 3), padding="same", strides=(2, 2), activation="relu", kernel_initializer=init)(x)
-    x = InstanceNormalization(axis=-1)(x)
     x = Conv2DTranspose(64, kernel_size=(3, 3), padding="same", strides=(2, 2), activation="relu", kernel_initializer=init)(x)
+    x = InstanceNormalization(axis=-1)(x)
+    x = Conv2DTranspose(32, kernel_size=(3, 3), padding="same", strides=(2, 2), activation="relu", kernel_initializer=init)(x)
     x = InstanceNormalization(axis=-1)(x)
 
     x = Conv2D(3, kernel_size=(7, 7), padding="same", strides=(1, 1), activation="tanh")(x)
@@ -60,7 +60,7 @@ def _build_discriminator(image_shape=(256, 256, 3)):
     x = Conv2D(256, kernel_size=(4, 4), strides=(2, 2), padding="same", kernel_initializer=init)(x)
     x = InstanceNormalization(axis=-1)(x)
     x = LeakyReLU(alpha=0.2)(x)
-    x = Conv2D(512, kernel_size=(4, 4), strides=(2, 2), padding="same", kernel_initializer=init)(x)
+    x = Conv2D(512, kernel_size=(4, 4), strides=(1, 1), padding="same", kernel_initializer=init)(x)
     x = InstanceNormalization(axis=-1)(x)
     x = LeakyReLU(alpha=0.2)(x)
     #x = Conv2D(512, kernel_size=(4, 4), padding="same", activation="relu")(x)
@@ -161,15 +161,19 @@ if __name__ == "__main__":
 
     image_shape = (256, 256, 3)
 
-    generator_AtoB = cycleGAN.G_A2B #_build_generator(image_shape=image_shape)
-    plot_model(generator_AtoB, to_file="generator.png")
-    generator_BtoA = cycleGAN.G_B2A #_build_generator(image_shape=image_shape)
-    generator_BtoA.summary()
+    #generator_AtoB = cycleGAN.G_A2B
+    generator_AtoB = _build_generator(image_shape=image_shape)
 
-    discriminator_A = cycleGAN.D_A #_build_discriminator(image_shape=image_shape)
-    plot_model(discriminator_A, to_file="discriminator.png")
+    #plot_model(generator_AtoB, to_file="generator_own.png")
+    generator_BtoA = cycleGAN.G_B2A #_build_generator(image_shape=image_shape)
+    generator_AtoB.summary()
+
+    #discriminator_A = cycleGAN.D_A
+    discriminator_A = _build_discriminator(image_shape=image_shape)
+
+    #plot_model(discriminator_A, to_file="discriminator_own.png")
     discriminator_B = cycleGAN.D_B #_build_discriminator(image_shape=image_shape)
-    discriminator_B.summary()
+    discriminator_A.summary()
 
     # A -> B -> A [real/fake]
     combined_model_AtoB = _build_combined_model(image_shape, generator_AtoB, generator_BtoA, discriminator_B)
@@ -177,8 +181,8 @@ if __name__ == "__main__":
     # B -> A -> B [real/fake]
     combined_model_BtoA = _build_combined_model(image_shape, generator_BtoA, generator_AtoB, discriminator_A)
 
-    trainA = np.load(os.path.join(data_path, "trainA" + ".npy"))
-    trainB = np.load(os.path.join(data_path, "trainB" + ".npy"))
+    #trainA = np.load(os.path.join(data_path, "trainA" + ".npy"))
+    #trainB = np.load(os.path.join(data_path, "trainB" + ".npy"))
 
-    train(generator_AtoB, generator_BtoA, discriminator_A, discriminator_B,
-          combined_model_AtoB, combined_model_BtoA, trainA, trainB, save_path=data_path)
+    #train(generator_AtoB, generator_BtoA, discriminator_A, discriminator_B,
+    #      combined_model_AtoB, combined_model_BtoA, trainA, trainB, save_path=data_path)

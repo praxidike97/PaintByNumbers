@@ -94,7 +94,7 @@ class CycleGAN():
             D_A = self.modelDiscriminator()
             D_B = self.modelDiscriminator()
             loss_weights_D = [0.5]  # 0.5 since we train on real and synthetic images
-        # D_A.summary()
+        D_A.summary()
 
         # Discriminator builds
         image_A = Input(shape=self.img_shape)

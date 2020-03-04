@@ -1,11 +1,14 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import json
+import glob
+from tqdm import tqdm
 
 from keras.models import load_model, model_from_json
 from keras.layers import Layer
 from keras_contrib.layers.normalization.instancenormalization import InstanceNormalization, InputSpec
 
+from PIL import Image
 from utils.data_utils import load_real_images
 import tensorflow as tf
 
@@ -26,21 +29,37 @@ class ReflectionPadding2D(Layer):
 
 data_path = "/media/fabian/Data/ML_Data/CycleGAN/ukiyoe2photo/trainB.npy"
 
-generator_BtoA = load_model("/home/fabian/GitHubProjects/PaintByNumbers/data/generator_BtoA-epoch_45001.h5", custom_objects={'InstanceNormalization': InstanceNormalization, "ReflectionPadding2D": ReflectionPadding2D})
+generator_BtoA = load_model("/home/fabian/GitHubProjects/PaintByNumbers/data/G_B2A_model_model_all_epoch_120.h5", custom_objects={'InstanceNormalization': InstanceNormalization, "ReflectionPadding2D": ReflectionPadding2D})
 
 #a = json.loads("/home/fabian/GitHubProjects/PaintByNumbers/data/G_B2A_model_model_epoch_120.json")
 
 #generator_BtoA = model_from_json(json.loads("/home/fabian/GitHubProjects/PaintByNumbers/data/G_B2A_model_model_epoch_120.json"), custom_objects={'InstanceNormalization': InstanceNormalization})
 #generator_BtoA.load_weights("/home/fabian/GitHubProjects/PaintByNumbers/data/G_B2A_model_weights_epoch_120.hdf5")
 
-trainB = np.load(data_path)
+#trainB = np.load(data_path)
 
-print(trainB.shape)
-raw_predictions = generator_BtoA.predict(trainB[100:120])
+filelist = sorted(glob.glob('/home/fabian/Tmp/cycleGAN/*.jpg'))
+#landscape_images = np.array([np.array(Image.open(fname)) for fname in filelist])
+
+images = list()
+for fname in tqdm(filelist):
+    im = Image.open(fname)
+    im = im.resize((256, 256), Image.ANTIALIAS)
+    images.append(np.array(im))
+
+#print(landscape_images.shape)
+images = np.asarray(images)
+np.save("/home/fabian/Tmp/lanscape-images.npy", images)
+
+raw_predictions = generator_BtoA.predict(images)
 predictions = ((raw_predictions+1.)*127.5).astype(int)
 
-for i in range(20):
-    plt.imshow(trainB[100+i])
-    plt.show()
+for i, prediction in enumerate(predictions):
+    image = Image.fromarray(prediction.astype('uint8'), 'RGB')
+    image.save('/home/fabian/Tmp/cycleGAN-transformed/image-%s.jpg' % str(i).zfill(4))
+
+for i in range(100):
+    #plt.imshow(trainB[i])
+    #plt.show()
     plt.imshow(predictions[i])
     plt.show()
