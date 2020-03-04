@@ -165,14 +165,16 @@ if __name__ == "__main__":
     generator_AtoB = _build_generator(image_shape=image_shape)
 
     #plot_model(generator_AtoB, to_file="generator_own.png")
-    generator_BtoA = cycleGAN.G_B2A #_build_generator(image_shape=image_shape)
+    #generator_BtoA = cycleGAN.G_B2A
+    generator_BtoA = _build_generator(image_shape=image_shape)
     generator_AtoB.summary()
 
     #discriminator_A = cycleGAN.D_A
     discriminator_A = _build_discriminator(image_shape=image_shape)
 
     #plot_model(discriminator_A, to_file="discriminator_own.png")
-    discriminator_B = cycleGAN.D_B #_build_discriminator(image_shape=image_shape)
+    #discriminator_B = cycleGAN.D_B
+    discriminator_B = _build_discriminator(image_shape=image_shape)
     discriminator_A.summary()
 
     # A -> B -> A [real/fake]
@@ -181,8 +183,8 @@ if __name__ == "__main__":
     # B -> A -> B [real/fake]
     combined_model_BtoA = _build_combined_model(image_shape, generator_BtoA, generator_AtoB, discriminator_A)
 
-    #trainA = np.load(os.path.join(data_path, "trainA" + ".npy"))
-    #trainB = np.load(os.path.join(data_path, "trainB" + ".npy"))
+    trainA = np.load(os.path.join(data_path, "trainA" + ".npy"))
+    trainB = np.load(os.path.join(data_path, "trainB" + ".npy"))
 
-    #train(generator_AtoB, generator_BtoA, discriminator_A, discriminator_B,
-    #      combined_model_AtoB, combined_model_BtoA, trainA, trainB, save_path=data_path)
+    train(generator_AtoB, generator_BtoA, discriminator_A, discriminator_B,
+          combined_model_AtoB, combined_model_BtoA, trainA, trainB, save_path=data_path)
